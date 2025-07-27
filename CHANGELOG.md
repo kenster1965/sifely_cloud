@@ -22,10 +22,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - UI-friendly integration with diagnostics and YAML options
 
 
-## [1.0.1] - ?
+## [1.0.3] - 2025-07-27
 
 ### Added
 - Setup git bug, ferature, issue reporting
 - Added git LICENSE
 - Adding git formats
 - Updated directory structure for manual download in to HA
+- Create CODEOWNERS
+- Update readme
+- Hacs integration
+- Fixed manifest.json
+
+
