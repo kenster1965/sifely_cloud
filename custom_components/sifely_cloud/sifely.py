@@ -319,16 +319,8 @@ async def setup_sifely_coordinator(
     # 💾 Register the coordinator globally
     hass.data.setdefault(DOMAIN, {})["coordinator"] = coordinator
 
-    # ⏱️ Step 3: Schedule ongoing polling for lock details and open state
-    async def _run_lock_details(now):
-        _LOGGER.debug("⏱️ Scheduled task: Fetching lock details")
-        await coordinator.async_query_lock_details()
-
-    async def _run_open_state(now):
-        _LOGGER.debug("⏱️ Scheduled task: Fetching open/closed state")
-        await coordinator.async_query_open_state()
-
-    async def _run_history_update(now):
+    # 🆕 RUN HISTORY UPDATE ONCE AT STARTUP
+    async def _run_history_update(now=None):  # <-- allow 'now' to be optional for direct call
         _LOGGER.debug("⏱️ Scheduled task: Fetching lock history diffs")
 
         for lock in coordinator.lock_list:
@@ -343,7 +335,19 @@ async def setup_sifely_coordinator(
             except Exception as e:
                 _LOGGER.warning("⚠️ Failed updating history for %s: %s", lock_id, e)
 
+    # ⏱️ Step 3: Schedule recurring updates
+    async def _run_lock_details(now):
+        _LOGGER.debug("⏱️ Scheduled task: Fetching lock details")
+        await coordinator.async_query_lock_details()
 
+    async def _run_open_state(now):
+        _LOGGER.debug("⏱️ Scheduled task: Fetching open/closed state")
+        await coordinator.async_query_open_state()
+
+    # 🆕 Call history update once immediately
+    hass.async_create_task(_run_history_update())
+
+    # ⏱️ Schedule repeating updates
     async_track_time_interval(hass, _run_lock_details, timedelta(seconds=DETAILS_UPDATE_INTERVAL))
     async_track_time_interval(hass, _run_open_state, timedelta(seconds=STATE_QUERY_INTERVAL))
     async_track_time_interval(hass, _run_history_update, timedelta(seconds=HISTORY_INTERVAL))
