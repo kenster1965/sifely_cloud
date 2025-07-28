@@ -47,6 +47,11 @@ def create_error_entities(locks: list[dict], coordinator) -> list[SensorEntity]:
 
 class SifelyBatterySensor(CoordinatorEntity, SensorEntity):
     """Battery level sensor for Sifely Smart Lock."""
+    _attr_translation_key = "battery"
+    _attr_has_entity_name = True
+    _attr_device_class = "battery"
+    _attr_native_unit_of_measurement = "%"
+    _attr_state_class = "measurement"
 
     def __init__(self, lock_data: dict, coordinator):
         super().__init__(coordinator)
@@ -57,11 +62,7 @@ class SifelyBatterySensor(CoordinatorEntity, SensorEntity):
         slug = slugify(alias)
         lock_id = lock_data.get("lockId")
 
-        self._attr_name = f"{ENTITY_PREFIX.capitalize()} Battery {alias}"  # e.g., "Sifely Battery Front Door"
         self._attr_unique_id = f"{ENTITY_PREFIX}_battery_{slug}_{lock_id}"
-        self._attr_device_class = "battery"
-        self._attr_native_unit_of_measurement = "%"
-        self._attr_state_class = "measurement"
         self._attr_device_info = async_register_lock_device(lock_data)
 
     @property
@@ -75,13 +76,17 @@ class SifelyBatterySensor(CoordinatorEntity, SensorEntity):
 
     @property
     def available(self):
-        """Battery sensor is only available if lockId is known and battery info has been fetched."""
+        """Battery sensor is only available if lockId is known."""
         lock_id = self.lock_data.get("lockId")
         return lock_id is not None and lock_id in self.coordinator.details_data
 
 
 class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
     """Sensor to display recent lock activity as text."""
+    _attr_translation_key = "history"
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:history"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, lock_data: dict, coordinator):
         super().__init__(coordinator)
@@ -95,19 +100,15 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
         self.lock_id = lock_id
         self.slug = slug
 
-        self._attr_name = f"{ENTITY_PREFIX.capitalize()} History {alias}"
         self._attr_unique_id = f"{ENTITY_PREFIX}_history_{slug}_{lock_id}"
-        self._attr_icon = "mdi:history"
         self._attr_device_info = async_register_lock_device(lock_data)
         self._attr_native_value = None
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_extra_state_attributes = {}
 
         if not hasattr(coordinator, "update_history_sensor"):
             coordinator.update_history_sensor = self._external_update
 
         self._latest_entries: list[dict] = []
-
 
     async def async_update(self):
         """Fetch latest lock history from coordinator."""
@@ -184,6 +185,10 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
 
 class SifelyCloudErrorSensor(CoordinatorEntity, SensorEntity):
     """Sensor to indicate cloud communication errors."""
+    _attr_translation_key = "error"
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:alert-circle"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, lock_data: dict, coordinator):
         super().__init__(coordinator)
@@ -193,11 +198,8 @@ class SifelyCloudErrorSensor(CoordinatorEntity, SensorEntity):
         alias = lock_data.get("lockAlias", "Sifely Lock")
         slug = slugify(alias)
 
-        self._attr_name = f"{ENTITY_PREFIX.capitalize()} Error {alias}"
         self._attr_unique_id = f"{ENTITY_PREFIX}_error_{slug}_{self.lock_id}"
-        self._attr_icon = "mdi:alert-circle"
         self._attr_native_value = "OK"
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_extra_state_attributes = {}
         self._attr_device_info = async_register_lock_device(lock_data)
 
@@ -219,7 +221,6 @@ class SifelyCloudErrorSensor(CoordinatorEntity, SensorEntity):
             self.async_write_ha_state()
         else:
             _LOGGER.warning("⚠️ Cannot clear error sensor — hass is None")
-
 
 
 async def async_setup_entry(
@@ -250,4 +251,3 @@ async def async_setup_entry(
         _LOGGER.info("🚨 %d error sensors added.", len(error_entities))
     if not all_entities:
         _LOGGER.warning("⚠️ No sensors found to set up.")
-
