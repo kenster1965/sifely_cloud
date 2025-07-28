@@ -315,6 +315,7 @@ async def setup_sifely_coordinator(
 
     # 🔋 Step 2: Immediately fetch lock details (so battery sensors are ready)
     await coordinator.async_query_lock_details()
+    coordinator.data = coordinator.details_data  # 🧠 Use detailed data for diagnostics
 
     # 💾 Register the coordinator globally
     hass.data.setdefault(DOMAIN, {})["coordinator"] = coordinator
