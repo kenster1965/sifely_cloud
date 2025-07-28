@@ -75,10 +75,10 @@
   "event": {
     "lock": {
       "locked": {
-        "title": "Lock engaged"
+        "title": "{entity_name} was locked"
       },
       "unlocked": {
-        "title": "Lock disengaged"
+        "title": "{entity_name} was unlocked"
       }
     }
   }
