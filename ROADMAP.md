@@ -15,6 +15,7 @@ Maybe:
 - [ ] Lock schedule viewer/editor
 - [ ] Doorbell / touch event detection (if supported)
 - [ ] Configurable polling intervals from the UI
+- [ ] I think the better lock version is available via lock device details need to investigate.
 
 Thinking about:
 - [ ] Rename locks from Home Assistant UI.
