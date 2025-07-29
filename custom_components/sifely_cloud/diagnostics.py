@@ -69,9 +69,8 @@ async def async_get_config_entry_diagnostics(
 
     "constants": {
         "DOMAIN": DOMAIN,
-        "CONF_APX_NUM_LOCKS": CONF_APX_NUM_LOCKS,
-        "API_BASE_URL": API_BASE_URL,
-        "CONF_HISTORY_ENTRIES": CONF_HISTORY_ENTRIES,
+        "CONF_APX_NUM_LOCKS": entry.options.get(CONF_APX_NUM_LOCKS, "not set"),
+        "CONF_HISTORY_ENTRIES": entry.options.get(CONF_HISTORY_ENTRIES, "not set"),
         "VERSION": VERSION,
         "DETAILS_UPDATE_INTERVAL": DETAILS_UPDATE_INTERVAL,
         "STATE_QUERY_INTERVAL": STATE_QUERY_INTERVAL,

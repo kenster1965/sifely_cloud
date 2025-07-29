@@ -22,8 +22,6 @@ def create_sensors(locks: list[dict], coordinator) -> list[SensorEntity]:
             entities.append(SifelyBatterySensor(lock, coordinator))
             entities.append(SifelyLockHistorySensor(lock, coordinator))
             entities.append(SifelyCloudErrorSensor(lock, coordinator))
-            # entities.append(SifelyRevisionsSensor(lock, coordinator))
-            # entities.append(SifelyVersionsSensor(lock, coordinator))
             entities.append(SifelyDiagnosticSensor(lock, coordinator))
         else:
             _LOGGER.warning("⚠️ Skipping sensor for lock with missing lockId: %s", lock)
@@ -196,71 +194,6 @@ class SifelyCloudErrorSensor(CoordinatorEntity, SensorEntity):
             _LOGGER.warning("⚠️ Cannot clear error sensor — hass is None")
 
 
-# class SifelyRevisionsSensor(CoordinatorEntity, SensorEntity):
-#     """Sensor for firmware and hardware revisions of Sifely lock."""
-
-#     def __init__(self, lock_data: dict, coordinator):
-#         super().__init__(coordinator)
-#         self.coordinator = coordinator
-#         self.lock_data = lock_data
-
-#         self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
-#         self.lock_id = lock_data.get("lockId")
-
-#         self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_revisions" if self.lock_id else self.alias
-#         self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_revisions" if self.lock_id else None
-#         self._attr_entity_category = EntityCategory.DIAGNOSTIC
-#         self._attr_device_info = async_register_lock_device(lock_data)
-
-#     @property
-#     def native_value(self) -> str | None:
-#         """Return firmware and hardware revision as state string."""
-#         details = self.coordinator.details_data.get(self.lock_id)
-#         if not details:
-#             return None
-
-#         fw = details.get("firmwareRevision", "N/A")
-#         hw = details.get("hardwareRevision", "N/A")
-#         return f"FirmwareRevision: {fw} | HardwareRevision: {hw}"
-
-
-# class SifelyVersionsSensor(CoordinatorEntity, SensorEntity):
-#     """Sensor for protocol/group/type/scene info."""
-
-#     def __init__(self, lock_data: dict, coordinator):
-#         super().__init__(coordinator)
-#         self.coordinator = coordinator
-#         self.lock_data = lock_data
-
-#         self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
-#         self.lock_id = lock_data.get("lockId")
-
-#         self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_versions" if self.lock_id else self.alias
-#         self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_versions" if self.lock_id else None
-#         self._attr_entity_category = EntityCategory.DIAGNOSTIC
-#         self._attr_device_info = async_register_lock_device(lock_data)
-
-#     @property
-#     def native_value(self) -> str | None:
-#         """Return lock version info as state string."""
-#         details = self.coordinator.details_data.get(self.lock_id)
-#         if not details:
-#             return None
-
-#         version = details.get("lockVersion", {})
-#         group_id = version.get("groupId", "N/A")
-#         protocol = version.get("protocolVersion", "N/A")
-#         protocol_type = version.get("protocolType", "N/A")
-#         org = version.get("orgId", "N/A")
-#         scene = version.get("scene", "N/A")
-#         keyboard = details.get("keyboardPwdVersion", "N/A")
-
-#         return (
-#             f"Group: {group_id} | Protocol: {protocol} | Type: {protocol_type} | "
-#             f"Org: {org} | Scene: {scene} | Keyboard: {keyboard}"
-#         )
-
-
 class SifelyDiagnosticSensor(CoordinatorEntity, SensorEntity):
     """Diagnostic sensor for Sifely lock metadata (firmware, hardware, etc.)."""
 
@@ -279,20 +212,9 @@ class SifelyDiagnosticSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self) -> str | None:
-        """Return a simple diagnostic state string."""
+        """Return a simple status for diagnostics."""
         details = self.coordinator.details_data.get(self.lock_id)
-        if not details:
-            return None
-        
-        firmware = details.get("firmwareRevision", "N/A")
-        hardware = details.get("hardwareRevision", "N/A")
-        keyboard = details.get("keyboardPwdVersion", "N/A")
-
-        return f"FirmwareRevision: {firmware} | HardwareRevision: {hardware} | KeyboardPwdVersion: {keyboard}"
-        
-        # if not self.lock_id or self.lock_id not in self.coordinator.details_data:
-        #     return None
-        # return "Available"
+        return "OK" if details else "Unavailable"
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -301,14 +223,14 @@ class SifelyDiagnosticSensor(CoordinatorEntity, SensorEntity):
         if not details:
             return {}
 
-        # Add other fields from details as needed
         return {
-            "firmwareRevision": details.get("firmwareRevision", "N/A"),
-            "hardwareRevision": details.get("hardwareRevision", "N/A"),
-            "keyboardPwdVersion": details.get("keyboardPwdVersion", "N/A"),
-            "hasGateway": details.get("hasGateway", False),
-            "isFrozen": details.get("isFrozen", False),
-            "passageMode": details.get("passageMode", False),
+            "firmware_revision": details.get("firmwareRevision", "N/A"),
+            "hardware_revision": details.get("hardwareRevision", "N/A"),
+            "keyboard_pwd_version": details.get("keyboardPwdVersion", "N/A"),
+            "has_gateway": details.get("hasGateway", False),
+            "is_frozen": details.get("isFrozen", False),
+            "passage_mode": details.get("passageMode", False),
+            "lock_version": details.get("lockVersion", "N/A"),
         }
 
 
@@ -330,8 +252,6 @@ async def async_setup_entry(
     battery_count = sum(isinstance(e, SifelyBatterySensor) for e in all_entities)
     history_count = sum(isinstance(e, SifelyLockHistorySensor) for e in all_entities)
     error_count = sum(isinstance(e, SifelyCloudErrorSensor) for e in all_entities)
-    #revisions_count = sum(isinstance(e, SifelyRevisionsSensor) for e in all_entities)
-    #versions_count = sum(isinstance(e, SifelyVersionsSensor) for e in all_entities)
     diagnostic_count = sum(isinstance(e, SifelyDiagnosticSensor) for e in all_entities)
 
     if all_entities:
@@ -342,10 +262,6 @@ async def async_setup_entry(
             _LOGGER.info("📜 %d history sensors added.", history_count)
         if error_count:
             _LOGGER.info("🚨 %d error sensors added.", error_count)
-        # if revisions_count:
-        #     _LOGGER.info("🔧 %d revision sensors added.", revisions_count)
-        # if versions_count:
-        #     _LOGGER.info("🔍 %d version sensors added.", versions_count )
         if diagnostic_count:
             _LOGGER.info("🩺 %d diagnostic sensors added.", diagnostic_count)
     else:
