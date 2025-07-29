@@ -31,3 +31,14 @@ body:
     id: steps
     attributes:
       label: Steps to Reproduce
+  - type: markdown
+    attributes:
+      value: |
+        ### 📎 Attach Diagnostics File
+        If possible, please include a diagnostics file for this integration.
+
+        You can download the diagnostics file by going to:
+
+        `Settings → Devices & Services → [Sifely Cloud Integration] → ⋮ → Download Diagnostics`
+
+        Then drag and drop the downloaded `.json` file into this issue to attach it.

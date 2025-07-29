@@ -38,7 +38,8 @@ This includes authentication, lock control, history querying, and diagnostics.
 - 💾 **Persisted history** with CSV logging
 - 🕓 **Automatic background polling** (every 5 minutes for history)
 - 🧰 Compatible with **Entity Category Diagnostics** for advanced insights
-- 🧪 **New! Unified Diagnostic Sensor** for firmware/hardware details and lock flags
+- 🧪 **Unified Diagnostic Sensor** for firmware/hardware details and lock flags
+- 🗂 **Diagnostics file download** for better troubleshooting via GitHub
 
 ---
 
@@ -112,6 +113,25 @@ Advanced users and developers can override default settings by editing the `cons
 
 ---
 
+## 📄 Diagnostics File Download
+When reporting bugs, please include a diagnostic file:
+
+### 📥 How to Download Diagnostics
+1. Go to **Settings → Devices & Services**
+2. Locate the **Sifely Cloud** integration
+3. Click the **⋮ (three-dot menu)** and select **Download Diagnostics**
+4. Save the file and attach it to your GitHub bug report
+
+This file includes:
+- Lock metadata (firmware/hardware versions)
+- API response codes
+- Entity states
+- Configuration flags from `const.py`
+
+> 🔐 Sensitive information such as passwords and tokens are automatically redacted.
+
+---
+
 ## 📁 File Persistence
 - Historical records are saved to:
 
@@ -129,7 +149,7 @@ See the [ROADMAP.md](./ROADMAP.md) for upcoming features and ideas.
 ## 🧑‍💻 Contributing / Issues
 Got a feature request, bug report, or enhancement idea?
 
-- Found a bug or want a new feature? [Open an issue](https://github.com/kenster1965/sifely_cloud/issues)
+- 🐞 [Open an issue](https://github.com/kenster1965/sifely_cloud/issues)
 - Pull requests are welcome and encouraged!
 - Follow Home Assistant [developer documentation](https://developers.home-assistant.io/) when contributing code
 
