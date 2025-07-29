@@ -5,7 +5,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity import EntityCategory
-from homeassistant.util import slugify
 from datetime import datetime, timezone
 
 from .const import DOMAIN, ENTITY_PREFIX, HISTORY_DISPLAY_LIMIT, HISTORY_RECORD_TYPES
@@ -14,96 +13,76 @@ from .device import async_register_lock_device
 _LOGGER = logging.getLogger(__name__)
 
 
-def create_battery_entities(locks: list[dict], coordinator) -> list[SensorEntity]:
-    """Create battery sensor entities for each lock."""
+def create_sensors(locks: list[dict], coordinator) -> list[SensorEntity]:
+    """Create all sensor entities for each lock."""
     entities = []
     for lock in locks:
-        if lock.get("lockId") is not None:
+        lock_id = lock.get("lockId")
+        if lock_id:
             entities.append(SifelyBatterySensor(lock, coordinator))
-        else:
-            _LOGGER.warning("⚠️ Skipping battery sensor for lock with missing lockId: %s", lock)
-    return entities
-
-def create_history_entities(locks: list[dict], coordinator) -> list[SensorEntity]:
-    """Create lock history sensor entities for each lock."""
-    entities = []
-    for lock in locks:
-        if lock.get("lockId") is not None:
             entities.append(SifelyLockHistorySensor(lock, coordinator))
-        else:
-            _LOGGER.warning("⚠️ Skipping history sensor for lock with missing lockId: %s", lock)
-    return entities
-
-def create_error_entities(locks: list[dict], coordinator) -> list[SensorEntity]:
-    """Create cloud error sensor entities for each lock."""
-    entities = []
-    for lock in locks:
-        if lock.get("lockId") is not None:
             entities.append(SifelyCloudErrorSensor(lock, coordinator))
         else:
-            _LOGGER.warning("⚠️ Skipping error sensor for lock with missing lockId: %s", lock)
+            _LOGGER.warning("⚠️ Skipping sensor for lock with missing lockId: %s", lock)
     return entities
 
 
 class SifelyBatterySensor(CoordinatorEntity, SensorEntity):
     """Battery level sensor for Sifely Smart Lock."""
-    _attr_translation_key = "battery"
-    _attr_has_entity_name = True
-    _attr_device_class = "battery"
-    _attr_native_unit_of_measurement = "%"
-    _attr_state_class = "measurement"
-
     def __init__(self, lock_data: dict, coordinator):
         super().__init__(coordinator)
         self.coordinator = coordinator
-        self.lock_data = lock_data
+        self.lock_id = lock_data.get("lockId")
+        self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
 
-        alias = lock_data.get("lockAlias", "Sifely Lock")
-        slug = slugify(alias)
-        lock_id = lock_data.get("lockId")
-
-        self._attr_unique_id = f"{ENTITY_PREFIX}_battery_{slug}_{lock_id}"
+        self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_battery" if self.lock_id else self.alias
+        self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_battery" if self.lock_id else None
+        self._attr_translation_key = "battery"
+        self._attr_translation_placeholders = {"name": self.alias}
+        self._attr_has_entity_name = False
+        self._attr_device_class = "battery"
+        self._attr_native_unit_of_measurement = "%"
+        self._attr_state_class = "measurement"
         self._attr_device_info = async_register_lock_device(lock_data)
 
     @property
     def native_value(self) -> int | None:
-        """Return the current battery level."""
-        lock_id = self.lock_data.get("lockId")
-        details = self.coordinator.details_data.get(lock_id)
-        if not details:
-            return None
-        return details.get("electricQuantity")
+        lock_data = self.coordinator.details_data.get(self.lock_id, {})
+        value = lock_data.get("electricQuantity")
+        if value is not None:
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                _LOGGER.warning("🔋 Invalid battery value for %s: %s", self.lock_id, value)
+        return None
 
     @property
-    def available(self):
-        """Battery sensor is only available if lockId is known."""
-        lock_id = self.lock_data.get("lockId")
-        return lock_id is not None and lock_id in self.coordinator.details_data
+    def available(self) -> bool:
+        return (
+            self.lock_id is not None and
+            self.lock_id in self.coordinator.details_data and
+            "electricQuantity" in self.coordinator.details_data[self.lock_id]
+        )
 
 
 class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
     """Sensor to display recent lock activity as text."""
-    _attr_translation_key = "history"
-    _attr_has_entity_name = True
-    _attr_icon = "mdi:history"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-
     def __init__(self, lock_data: dict, coordinator):
         super().__init__(coordinator)
         self.coordinator = coordinator
-        self.lock_data = lock_data
+        self.lock_id = lock_data.get("lockId")
+        self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
 
-        alias = lock_data.get("lockAlias", "Sifely Lock")
-        slug = slugify(alias)
-        lock_id = lock_data.get("lockId")
-
-        self.lock_id = lock_id
-        self.slug = slug
-
-        self._attr_unique_id = f"{ENTITY_PREFIX}_history_{slug}_{lock_id}"
-        self._attr_device_info = async_register_lock_device(lock_data)
+        self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_history" if self.lock_id else self.alias
+        self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_history" if self.lock_id else None
+        self._attr_translation_key = "history"
+        self._attr_translation_placeholders = {"name": self.alias}
         self._attr_native_value = None
+        self._attr_has_entity_name = False
+        self._attr_icon = "mdi:history"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_extra_state_attributes = {}
+        self._attr_device_info = async_register_lock_device(lock_data)
 
         if not hasattr(coordinator, "update_history_sensor"):
             coordinator.update_history_sensor = self._external_update
@@ -111,15 +90,12 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
         self._latest_entries: list[dict] = []
 
     async def async_update(self):
-        """Fetch latest lock history from coordinator."""
         history = await self.coordinator.async_query_lock_history(self.lock_id)
-
         if not history:
             self._attr_native_value = "No recent activity"
             self._attr_extra_state_attributes = {}
             return
 
-        # Create a summary string (last user, time, type)
         lines = []
         attr_map = {}
 
@@ -129,7 +105,6 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
             record_type = entry.get("recordType", "N/A")
             success = entry.get("success", -1)
 
-            # Map record type to readable name
             method = HISTORY_RECORD_TYPES.get(record_type, f"{record_type}")
             success_text = "✅ Success" if success == 1 else "❌ Failed"
 
@@ -147,16 +122,13 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
         self._attr_extra_state_attributes = attr_map
 
     async def _external_update(self, lock_id, entries):
-        """Receive external history data from the coordinator."""
         if lock_id != self.lock_id:
             return
-
         self._latest_entries = entries
         self._update_from_entries()
         self.async_write_ha_state()
 
     def _update_from_entries(self):
-        """Set sensor state and attributes from latest_entries."""
         if not self._latest_entries:
             self._attr_native_value = "No recent activity"
             self._attr_extra_state_attributes = {}
@@ -174,7 +146,6 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
             method = HISTORY_RECORD_TYPES.get(record_type, f"{record_type}")
             formatted = f"{username} - {method} - {success}"
 
-            # Use timestamp as the key (ensures clean UI labels)
             attr_map[timestamp] = formatted
             if latest_value is None:
                 latest_value = formatted
@@ -185,20 +156,19 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
 
 class SifelyCloudErrorSensor(CoordinatorEntity, SensorEntity):
     """Sensor to indicate cloud communication errors."""
-    _attr_translation_key = "error"
-    _attr_has_entity_name = True
-    _attr_icon = "mdi:alert-circle"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-
     def __init__(self, lock_data: dict, coordinator):
         super().__init__(coordinator)
         self.coordinator = coordinator
-        self.lock_data = lock_data
         self.lock_id = lock_data.get("lockId")
-        alias = lock_data.get("lockAlias", "Sifely Lock")
-        slug = slugify(alias)
+        self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
 
-        self._attr_unique_id = f"{ENTITY_PREFIX}_error_{slug}_{self.lock_id}"
+        self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_error" if self.lock_id else self.alias
+        self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_error" if self.lock_id else None
+        self._attr_translation_key = "error"
+        self._attr_translation_placeholders = {"name": self.alias}
+        self._attr_has_entity_name = False
+        self._attr_icon = "mdi:alert-circle"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_native_value = "OK"
         self._attr_extra_state_attributes = {}
         self._attr_device_info = async_register_lock_device(lock_data)
@@ -228,7 +198,6 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Sifely sensors (battery + history)."""
     _LOGGER.info("🔋 Setting up Sifely sensors")
 
     coordinator = hass.data[DOMAIN].get("coordinator")
@@ -236,18 +205,20 @@ async def async_setup_entry(
         _LOGGER.warning("⚠️ No coordinator found for sensors")
         return
 
-    battery_entities = create_battery_entities(coordinator.data, coordinator)
-    history_entities = create_history_entities(coordinator.data, coordinator)
-    error_entities = create_error_entities(coordinator.data, coordinator)
-
-    all_entities = battery_entities + history_entities + error_entities
+    all_entities = create_sensors(coordinator.data, coordinator)
     async_add_entities(all_entities)
 
-    if battery_entities:
-        _LOGGER.info("🔋 %d battery sensors added.", len(battery_entities))
-    if history_entities:
-        _LOGGER.info("📜 %d history sensors added.", len(history_entities))
-    if error_entities:
-        _LOGGER.info("🚨 %d error sensors added.", len(error_entities))
-    if not all_entities:
+    battery_count = sum(isinstance(e, SifelyBatterySensor) for e in all_entities)
+    history_count = sum(isinstance(e, SifelyLockHistorySensor) for e in all_entities)
+    error_count = sum(isinstance(e, SifelyCloudErrorSensor) for e in all_entities)
+
+    if all_entities:
+        _LOGGER.info("✅ %d total sensors added.", len(all_entities))
+        if battery_count:
+            _LOGGER.info("🔋 %d battery sensors added.", battery_count)
+        if history_count:
+            _LOGGER.info("📜 %d history sensors added.", history_count)
+        if error_count:
+            _LOGGER.info("🚨 %d error sensors added.", error_count)
+    else:
         _LOGGER.warning("⚠️ No sensors found to set up.")
