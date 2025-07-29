@@ -193,6 +193,71 @@ class SifelyCloudErrorSensor(CoordinatorEntity, SensorEntity):
             _LOGGER.warning("⚠️ Cannot clear error sensor — hass is None")
 
 
+class SifelyRevisionsSensor(CoordinatorEntity, SensorEntity):
+    """Sensor for firmware and hardware revisions of Sifely lock."""
+
+    def __init__(self, lock_data: dict, coordinator):
+        super().__init__(coordinator)
+        self.coordinator = coordinator
+        self.lock_data = lock_data
+
+        self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
+        self.lock_id = lock_data.get("lockId")
+
+        self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_revisions" if self.lock_id else self.alias
+        self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_revisions" if self.lock_id else None
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_device_info = async_register_lock_device(lock_data)
+
+    @property
+    def native_value(self) -> str | None:
+        """Return firmware and hardware revision as state string."""
+        details = self.coordinator.details_data.get(self.lock_id)
+        if not details:
+            return None
+
+        fw = details.get("firmwareRevision", "N/A")
+        hw = details.get("hardwareRevision", "N/A")
+        return f"FirmwareRevision: {fw} | HardwareRevision: {hw}"
+
+
+class SifelyVersionsSensor(CoordinatorEntity, SensorEntity):
+    """Sensor for protocol/group/type/scene info."""
+
+    def __init__(self, lock_data: dict, coordinator):
+        super().__init__(coordinator)
+        self.coordinator = coordinator
+        self.lock_data = lock_data
+
+        self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
+        self.lock_id = lock_data.get("lockId")
+
+        self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_versions" if self.lock_id else self.alias
+        self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_versions" if self.lock_id else None
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_device_info = async_register_lock_device(lock_data)
+
+    @property
+    def native_value(self) -> str | None:
+        """Return lock version info as state string."""
+        details = self.coordinator.details_data.get(self.lock_id)
+        if not details:
+            return None
+
+        version = details.get("lockVersion", {})
+        group_id = version.get("groupId", "N/A")
+        protocol = version.get("protocolVersion", "N/A")
+        protocol_type = version.get("protocolType", "N/A")
+        org = version.get("orgId", "N/A")
+        scene = version.get("scene", "N/A")
+        keyboard = details.get("keyboardPwdVersion", "N/A")
+
+        return (
+            f"Group: {group_id} | Protocol: {protocol} | Type: {protocol_type} | "
+            f"Org: {org} | Scene: {scene} | Keyboard: {keyboard}"
+        )
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
