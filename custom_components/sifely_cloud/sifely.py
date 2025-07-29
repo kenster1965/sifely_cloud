@@ -12,20 +12,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 
 from .const import (
-    DOMAIN,
-    CONF_APX_NUM_LOCKS,
-    LOCK_REQUEST_RETRIES,
-    STATE_QUERY_INTERVAL,
-    DETAILS_UPDATE_INTERVAL,
-    HISTORY_DISPLAY_LIMIT,
-    HISTORY_INTERVAL,
-    TOKEN_401s_BEFORE_REAUTH,
-    TOKEN_401s_BEFOR_ALERT,
-    KEYLIST_ENDPOINT,
-    LOCK_DETAIL_ENDPOINT,
-    QUERY_STATE_ENDPOINT,
-    LOCK_ENDPOINT,
-    UNLOCK_ENDPOINT,
+    DOMAIN, CONF_APX_NUM_LOCKS, LOCK_REQUEST_RETRIES, STATE_QUERY_INTERVAL, DETAILS_UPDATE_INTERVAL, \
+    HISTORY_DISPLAY_LIMIT, HISTORY_INTERVAL, TOKEN_401s_BEFORE_REAUTH, TOKEN_401s_BEFORE_ALERT, \
+    KEYLIST_ENDPOINT, LOCK_DETAIL_ENDPOINT, QUERY_STATE_ENDPOINT, LOCK_ENDPOINT, UNLOCK_ENDPOINT,
     LOCK_HISTORY_ENDPOINT,
 )
 from .token_manager import SifelyTokenManager
@@ -161,9 +150,9 @@ class SifelyCoordinator(DataUpdateCoordinator):
                                 _LOGGER.warning(f"🔁 Detected {TOKEN_401s_BEFORE_REAUTH} consecutive 401s. Triggering token refresh...")
                                 await self.token_manager.refresh_login_token()
 
-                            if self._consecutive_401s >= TOKEN_401s_BEFOR_ALERT:
+                            if self._consecutive_401s >= TOKEN_401s_BEFORE_ALERT:
                                 if hasattr(self, "set_cloud_error"):
-                                    self.set_cloud_error(f"Exceeded {TOKEN_401s_BEFOR_ALERT} consecutive 401 errors. Token likely invalid.")
+                                    self.set_cloud_error(f"Exceeded {TOKEN_401s_BEFORE_ALERT} consecutive 401 errors. Token likely invalid.")
 
                         else:
                             _LOGGER.warning("⚠️ HTTP %d when fetching state for %s: %s", resp.status, lock_id, text)

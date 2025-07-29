@@ -25,7 +25,7 @@ HISTORY_DISPLAY_LIMIT = 20  # Limit for history fetching, max possible history r
 LOCK_REQUEST_RETRIES = 3  # Number of retries for lock/unlock requests
 TOKEN_REFRESH_BUFFER_MINUTES = 5 # Buffer time to refresh token early (before actual expiration)
 TOKEN_401s_BEFORE_REAUTH = 5  # Number of 401 errors before re-authentication
-TOKEN_401s_BEFOR_ALERT = 10  # Number of 401 errors before alerting user
+TOKEN_401s_BEFORE_ALERT = 10  # Number of 401 errors before alerting user
 
 
 # API endpoints
