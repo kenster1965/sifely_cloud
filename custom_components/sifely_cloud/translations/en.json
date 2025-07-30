@@ -17,9 +17,9 @@
     "error": {
       "auth": "Invalid username or password"
     },
-      "abort": {
-        "single_instance_allowed": "Only a single configuration of Sifely Cloud is allowed."
-      }
+    "abort": {
+      "single_instance_allowed": "Only a single configuration of Sifely Cloud is allowed."
+    }
   },
   "options": {
     "step": {
@@ -33,6 +33,52 @@
           "apxNumLocks": "Number of Locks (APX)",
           "history_entries": "Number of history records to maintain"
         }
+      }
+    }
+  },
+  "entity": {
+    "lock": {
+      "lock": "Sifely Lock {name}",
+      "description": "Sifely lock entity"
+    },
+    "sensor": {
+      "battery": {
+        "name": "Battery",
+        "description": "Battery level of the Sifely lock"
+      },
+      "history": {
+        "name": "History",
+        "description": "Recent lock activity"
+      },
+      "error": {
+        "name": "Error",
+        "description": "Cloud communication error status"
+      }
+    },
+    "binary_sensor": {
+      "privacy_mode": {
+        "name": "Privacy Mode",
+        "description": "Indicates whether privacy mode is enabled on the lock"
+      },
+      "tamper_alert": {
+        "name": "Tamper Alert",
+        "description": "Indicates whether tamper alert has been triggered"
+      }
+    }
+  },
+  "state": {
+    "lock": {
+      "locked": "locked",
+      "unlocked": "unlocked"
+    }
+  },
+  "event": {
+    "lock": {
+      "locked": {
+        "title": "{entity_name} was locked"
+      },
+      "unlocked": {
+        "title": "{entity_name} was unlocked"
       }
     }
   }

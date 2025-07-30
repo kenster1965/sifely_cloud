@@ -35,7 +35,8 @@ class SifelySmartLock(LockEntity):
         slug = slugify(alias)
         lock_id = lock_data.get("lockId")
 
-        self._attr_name = f"{ENTITY_PREFIX}_{slug}"
+        self._attr_translation_key = "lock"
+        self._attr_translation_placeholders = {"name": alias}
         self._attr_unique_id = f"{ENTITY_PREFIX}_{slug}_{lock_id}" if lock_id else None
         self._attr_device_info = async_register_lock_device(lock_data)
 
