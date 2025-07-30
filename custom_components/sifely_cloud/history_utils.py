@@ -60,8 +60,14 @@ async def fetch_and_update_lock_history(coordinator, lock_id: int):
         formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S")
 
         record_type_code = row.get("recordType")
-        record_type = HISTORY_RECORD_TYPES.get(record_type_code, f"Type {record_type_code}")
-        username = row.get("username", "Unknown")
+        record_type = HISTORY_RECORD_TYPES.get(record_type_code, f"{record_type_code}")
+        raw_username = row.get("username", "Unknown")
+        
+        if isinstance(raw_username, str) and "_" in raw_username:
+            username = raw_username.split("_")[0] + "_"
+        else:
+            username = raw_username
+            
         success = "Success" if row.get("success", -1) == 1 else "Failed"
 
         fresh_rows.append({

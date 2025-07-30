@@ -4,25 +4,6 @@ This document outlines planned features, improvements, and ideas for the future 
 
 ---
 
-## ✅ Completed (v1.0.0)
-- Initial support for lock discovery via `/v3/key/list`
-- Token authentication via `/smart/login`
-- Lock command support (lock/unlock)
-- Battery sensor
-- Lock open/closed state sensor
-- Lock history sensor with persistent CSV storage
-- Coordinator-based architecture
-- Diagnostic error sensor
-- Configurable max number of locks and history entries
-- UI-friendly history attributes and summary
-- Privacy Lock and Tamper Alert binary sensors
-
-## Next release
-- GitHub Actions and version tagging
-- README, license, and issue templates
-
----
-
 ## 🧭 Planned Features / Fixes
 
 Maybe:
@@ -31,12 +12,10 @@ Maybe:
 - [ ] Validate and sort lock history by timestamp (to guard against out-of-order entries)?
 - [ ] Button to download the latest lock history to a .csv file via the www/ folder, or maybe email?
 - [ ] Persist cloud error status.
-- [ ] Update translations with any text out there.
-- [ ] Look at UUID, token, or hashed identifier from web and find user name for history file.
 - [ ] Lock schedule viewer/editor
 - [ ] Doorbell / touch event detection (if supported)
-- [ ] Configurable polling intervals
-- [ ] Auto-restore lock history from cloud on reboot
+- [ ] Configurable polling intervals from the UI
+- [ ] I think the better lock version is available via lock device details need to investigate.
 
 Thinking about:
 - [ ] Rename locks from Home Assistant UI.
@@ -44,12 +23,11 @@ Thinking about:
 - [ ] Lock configuration sync (from app → HA). ( Confirm)
 - [ ] Optional persistent notification on tamper alert.
 - [ ] Push notification integration (via HA Notify service).
-- [ ] Chart view of lock usage over time.
+- [ ] Chart view of lock usage over time?
 - [ ] History trend analysis in UI (via custom panel or HACS card).
-- [ ] Option to disable polling (manual update only? )
+- [ ] Option to disable polling (manual update only? or from UI)
 - [ ] Better handling for gateway busy/timeout edge cases.
 - [ ] QR Code-based setup via UI (This would be cool)
-
 
 ---
 

@@ -99,12 +99,14 @@ Advanced users and developers can override default settings by editing the `cons
 ---
 
 ## 🧪 Entities Created
-| Entity Type     | Description                             |
-|-----------------|-----------------------------------------|
-| `lock`          | Lock/unlock control for each Sifely lock |
-| `sensor`        | Battery sensor + recent history text     |
-| `binary_sensor` | Privacy Lock & Tamper Alert flags        |
-| `sensor`        | Cloud error diagnostics                  |
+| Entity Type      | Description                            | Notes                                                    |
+|------------------|----------------------------------------|----------------------------------------------------------|
+| `lock`           | Lock/unlock control for Sifely lock    |                                                          |
+| `sensor`         | Battery level sensor                   |                                                          |
+| `sensor`         | Recent lock/unlock history             | Usernames from online entries are trimmed removing hash. |
+| `binary_sensor`  | Privacy Lock status sensor             |                                                          |
+| `binary_sensor`  | Tamper Alert status sensor             |                                                          |
+| `sensor`         | Cloud error diagnostics (connectivity) | Shows error info for cloud token or API issues.          |
 
 ---
 

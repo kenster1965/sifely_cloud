@@ -130,7 +130,7 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
             success = entry.get("success", -1)
 
             # Map record type to readable name
-            method = HISTORY_RECORD_TYPES.get(record_type, f"Type {record_type}")
+            method = HISTORY_RECORD_TYPES.get(record_type, f"{record_type}")
             success_text = "✅ Success" if success == 1 else "❌ Failed"
 
             try:
@@ -171,7 +171,7 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
             record_type = entry.get("recordType", "N/A")
             success = entry.get("success", "Unknown")
 
-            method = HISTORY_RECORD_TYPES.get(record_type, f"Type {record_type}")
+            method = HISTORY_RECORD_TYPES.get(record_type, f"{record_type}")
             formatted = f"{username} - {method} - {success}"
 
             # Use timestamp as the key (ensures clean UI labels)
