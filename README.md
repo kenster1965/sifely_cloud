@@ -80,7 +80,7 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 
 ## 🛠 Configuration Options
 - **Email / Password** – Your Sifely cloud account credentials
-  - The system will find your ClientID.
+  - The system will find your ClientID
   - After integration is complete and you select Configure you will see your ClientId
 - **Number of Locks (APX)** – Approximate number of locks to query
 - **Number of History Entries** – Maximum recent events to retain (default: `20`)
