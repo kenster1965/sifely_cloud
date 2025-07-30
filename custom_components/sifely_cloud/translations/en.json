@@ -15,7 +15,11 @@
       }
     },
     "error": {
-      "auth": "Invalid username or password"
+      "auth": "Invalid username or password",
+      "bad_username": "Invalid username. Please check your email address.",
+      "bad_password": "Incorrect password. Please try again.",
+      "unknown_error": "Login failed due to an unknown error.",
+      "connection_error": "Could not connect to Sifely server. Please try again."
     },
     "abort": {
       "single_instance_allowed": "Only a single configuration of Sifely Cloud is allowed."

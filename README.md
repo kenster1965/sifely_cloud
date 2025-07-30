@@ -52,7 +52,8 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 - Lock Control, Battery, Privacy Lock, Tamper Alert sensors, ...  
   <img src="images/panel.jpg" alt="panel" width="300px">  
   <img src="images/show_locked.jpg" alt="show_locked" width="300px">
-  <img src="images/logbook.jpg" alt="logbook" width="300px">
+  <img src="images/logbook.jpg" alt="logbook" width="300px">  
+  <img src="images/diagnostic_sensor.jpg" alt="diagnostic_sensor" width="300px">
 
 - Lock history sensor with structured entries  
   <img src="images/history.jpg" alt="history" width="300px">
@@ -79,11 +80,8 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 
 ## 🛠 Configuration Options
 - **Email / Password** – Your Sifely cloud account credentials
-- **Client ID** – A unique identifier used to access the Sifely API
-  - 📌 How to obtain your Client ID:
-  - Go to the Sifely Smart Manager Portal [https://app-smart-manager.sifely.com/Login.html](https://app-smart-manager.sifely.com/Login.html)
-  - Log in using your Sifely app username and password
-  - After logging in you will be shown your clientId (What you need) and a clientSecret (not needed)
+  - The system will find your ClientID.
+  - After integration is complete and you select Configure you will see your ClientId
 - **Number of Locks (APX)** – Approximate number of locks to query
 - **Number of History Entries** – Maximum recent events to retain (default: `20`)
 
