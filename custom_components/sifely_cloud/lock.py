@@ -5,7 +5,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.util import slugify
 
 from .const import DOMAIN, ENTITY_PREFIX
 from .device import async_register_lock_device
@@ -17,7 +16,8 @@ def create_lock_entities(locks: list[dict], coordinator: DataUpdateCoordinator) 
     """Create lock entities from Sifely lock data."""
     entities = []
     for lock in locks:
-        if lock.get("lockId") is not None:
+        lock_id = lock.get("lockId")
+        if lock_id:
             entities.append(SifelySmartLock(lock, coordinator))
         else:
             _LOGGER.warning("⚠️ Skipping lock with missing lockId: %s", lock)
@@ -28,63 +28,54 @@ class SifelySmartLock(LockEntity):
     """Representation of a Sifely Smart Lock."""
 
     def __init__(self, lock_data: dict, coordinator: DataUpdateCoordinator):
+        """Initialize the Lock."""
         self.coordinator = coordinator
         self.lock_data = lock_data
 
-        alias = lock_data.get("lockAlias", "Sifely Lock")
-        slug = slugify(alias)
-        lock_id = lock_data.get("lockId")
+        self.lock_id = lock_data.get("lockId")
+        self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
 
+        self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_lock" if self.lock_id else self.alias
+        self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_lock" if self.lock_id else None
         self._attr_translation_key = "lock"
-        self._attr_translation_placeholders = {"name": alias}
-        self._attr_unique_id = f"{ENTITY_PREFIX}_{slug}_{lock_id}" if lock_id else None
+        self._attr_translation_placeholders = {"name": self.alias}
         self._attr_device_info = async_register_lock_device(lock_data)
 
     @property
     def is_locked(self) -> bool | None:
         """Return True if locked, False if unlocked, None if unknown."""
-        lock_id = self.lock_data.get("lockId")
-        if lock_id is None:
+        if not self.lock_id:
             return None
 
-        state = self.coordinator.open_state_data.get(lock_id)
-
+        state = self.coordinator.open_state_data.get(self.lock_id)
         # Sifely: 0 = locked, 1 = unlocked
-        if state == 0:
-            return True
-        elif state == 1:
-            return False
-        return None
+        return True if state == 0 else False if state == 1 else None
 
     async def async_lock(self, **kwargs):
         """Send lock command to the device."""
-        lock_id = self.lock_data.get("lockId")
-        if not lock_id:
+        if not self.lock_id:
             _LOGGER.warning("🔒 Cannot lock: Missing lockId")
             return
 
-        _LOGGER.info("🔒 Lock command issued for %s", self.lock_data.get("lockAlias"))
-        await self.coordinator.async_send_lock_command(lock_id, lock=True)
-        # Run refresh state for faster UI update
+        _LOGGER.info("🔒 Lock command issued for %s", self.alias)
+        await self.coordinator.async_send_lock_command(self.lock_id, lock=True)
         await self.coordinator.async_query_open_state()
         self.async_write_ha_state()
 
     async def async_unlock(self, **kwargs):
         """Send unlock command to the device."""
-        lock_id = self.lock_data.get("lockId")
-        if not lock_id:
+        if not self.lock_id:
             _LOGGER.warning("🔓 Cannot unlock: Missing lockId")
             return
 
-        _LOGGER.info("🔓 Unlock command issued for %s", self.lock_data.get("lockAlias"))
-        await self.coordinator.async_send_lock_command(lock_id, lock=False)
-        # Run refresh state for faster UI update
+        _LOGGER.info("🔓 Unlock command issued for %s", self.alias)
+        await self.coordinator.async_send_lock_command(self.lock_id, lock=False)
         await self.coordinator.async_query_open_state()
         self.async_write_ha_state()
 
     @property
     def available(self):
-        return self.lock_data.get("lockId") is not None
+        return self.lock_id is not None and self.lock_id in self.coordinator.open_state_data
 
     async def async_update(self):
         await self.coordinator.async_request_refresh()
@@ -95,9 +86,8 @@ class SifelySmartLock(LockEntity):
 
     def _handle_coordinator_update(self):
         """Called when coordinator updates data."""
-        # Update local lock data from coordinator base list
         for updated_lock in self.coordinator.data:
-            if updated_lock.get("lockId") == self.lock_data.get("lockId"):
+            if updated_lock.get("lockId") == self.lock_id:
                 self.lock_data = updated_lock
                 break
         self.async_write_ha_state()

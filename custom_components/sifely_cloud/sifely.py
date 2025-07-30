@@ -174,11 +174,14 @@ class SifelyCoordinator(DataUpdateCoordinator):
             except Exception as e:
                 _LOGGER.warning("🚫 Failed to fetch open state for %s: %s", lock_id, e)
 
-    async def async_query_lock_details(self):
+
+    async def async_query_lock_details(self) -> dict:
         """Query detailed lock info for each lock and store in self.details_data."""
+        self.details_data = {}  # Reset it fresh each call
+
         if not self.lock_list:
             _LOGGER.debug("⏩ Skipping lock detail polling: lock list not available")
-            return
+            return self.details_data
 
         headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -201,26 +204,34 @@ class SifelyCoordinator(DataUpdateCoordinator):
                         data = json.loads(text)
 
                         if resp.status == 200:
-                            if "code" in data:
-                                if data.get("code") == 200:
-                                    self.details_data[lock_id] = data.get("data", {})
-                                elif data.get("code") == -3003:
-                                    _LOGGER.debug("⏳ Gateway busy when querying details for %s. Will retry.", lock_id)
-                                else:
-                                    _LOGGER.warning("⚠️ Unexpected lock detail for %s: %s", lock_id, data)
+                            if data.get("code") == 200 and isinstance(data.get("data"), dict):
+                                # ✅ Standard format
+                                lock_data = data["data"]
+                                self.details_data[lock_id] = lock_data
+                                _LOGGER.debug("✅ Parsed wrapped lock detail for %s", lock_id)
+
+                            elif data.get("code") == -3003:
+                                _LOGGER.debug("⏳ Gateway busy when querying details for %s. Will retry.", lock_id)
 
                             elif "lockId" in data:
+                                # ✅ Some devices return raw lock data directly
                                 self.details_data[lock_id] = data
+                                _LOGGER.debug("ℹ️ Parsed unwrapped lock detail for %s", lock_id)
+
                             else:
-                                _LOGGER.warning("⚠️ Unknown lock detail format for %s: %s", lock_id, data)
+                                _LOGGER.warning("⚠️ Unexpected lock detail format for %s: %s", lock_id, data)
+
                         else:
-                            _LOGGER.warning("⚠️ HTTP %d when fetching details for %s: %s", resp.status, lock_id, text)
+                            _LOGGER.warning("🚫 Non-200 HTTP status %s for lock %s", resp.status, lock_id)
 
                     except Exception as e:
                         _LOGGER.warning("❌ Failed to parse lock detail for %s: %s", lock_id, e)
 
             except Exception as e:
                 _LOGGER.warning("🚫 Failed to fetch lock detail for %s: %s", lock_id, e)
+
+        return self.details_data  # ✅ Explicit return
+
 
     async def async_send_lock_command(self, lock_id: int, lock: bool) -> bool:
         """Send a lock or unlock command to a specific lock."""
@@ -314,7 +325,7 @@ async def setup_sifely_coordinator(
     coordinator.data = locks  # 🔥 Set initial data for entities
 
     # 🔋 Step 2: Immediately fetch lock details (so battery sensors are ready)
-    await coordinator.async_query_lock_details()
+    coordinator.details_data = await coordinator.async_query_lock_details()
 
     # 💾 Register the coordinator globally
     hass.data.setdefault(DOMAIN, {})["coordinator"] = coordinator

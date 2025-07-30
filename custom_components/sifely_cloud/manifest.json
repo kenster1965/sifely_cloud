@@ -10,5 +10,6 @@
     "iot_class": "cloud_polling",
     "integration_type": "hub",
     "translations": ["en"],
-    "requirements": []
+    "requirements": [],
+    "diagnostics": ["config_entry"]
 }
