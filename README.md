@@ -8,7 +8,6 @@ A **custom integration** for Home Assistant that connects to **Sifely smart lock
 [![Report Issue](https://img.shields.io/badge/Report-Issue-blue)](https://github.com/Kenster1965/sifely_cloud/issues/new/choose)  
 [![Community Forum](https://img.shields.io/badge/Community-Forum-blue.svg?style=flat&logo=home-assistant)](https://community.home-assistant.io/)
 
-
 - [API Documentation](#-api-documentation)
 - [Features](#-features)
 - [UI Screenshots](#-ui-screenshots)
@@ -21,7 +20,7 @@ A **custom integration** for Home Assistant that connects to **Sifely smart lock
 - [Contributing / Issues](#-contributing--issues)
 - [Disclaimer](#-disclaimer)
 - [License](#-license)
-  
+
 ## 📚 API Documentation
 All Sifely Cloud API endpoints used in this integration are based on the official documentation:  
 [https://apidocs.sifely.com](https://apidocs.sifely.com)  
@@ -39,6 +38,8 @@ This includes authentication, lock control, history querying, and diagnostics.
 - 💾 **Persisted history** with CSV logging
 - 🕓 **Automatic background polling** (every 5 minutes for history)
 - 🧰 Compatible with **Entity Category Diagnostics** for advanced insights
+- 🧪 **Unified Diagnostic Sensor** for firmware/hardware details and lock flags
+- 🗂 **Diagnostics file download** for better troubleshooting via GitHub
 
 ---
 
@@ -82,7 +83,7 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
   - 📌 How to obtain your Client ID:
   - Go to the Sifely Smart Manager Portal [https://app-smart-manager.sifely.com/Login.html](https://app-smart-manager.sifely.com/Login.html)
   - Log in using your Sifely app username and password
-  - After loging in you will be shown your clientId (What you need) and a clientSecret (not needed)
+  - After logging in you will be shown your clientId (What you need) and a clientSecret (not needed)
 - **Number of Locks (APX)** – Approximate number of locks to query
 - **Number of History Entries** – Maximum recent events to retain (default: `20`)
 
@@ -95,6 +96,7 @@ Advanced users and developers can override default settings by editing the `cons
 - History record type labels
 - Default limits for entities and diagnostics
 - Error thresholds before token refresh
+- 🔧 View all current const values through diagnostics
 
 ---
 
@@ -104,9 +106,29 @@ Advanced users and developers can override default settings by editing the `cons
 | `lock`           | Lock/unlock control for Sifely lock    |                                                          |
 | `sensor`         | Battery level sensor                   |                                                          |
 | `sensor`         | Recent lock/unlock history             | Usernames from online entries are trimmed removing hash. |
+| `sensor`         | Diagnostic sensor                      | Shows firmware/hardware versions + lock state flags      |
 | `binary_sensor`  | Privacy Lock status sensor             |                                                          |
 | `binary_sensor`  | Tamper Alert status sensor             |                                                          |
 | `sensor`         | Cloud error diagnostics (connectivity) | Shows error info for cloud token or API issues.          |
+
+---
+
+## 📄 Diagnostics File Download
+When reporting bugs, please include a diagnostic file:
+
+### 📥 How to Download Diagnostics
+1. Go to **Settings → Devices & Services**
+2. Locate the **Sifely Cloud** integration
+3. Click the **⋮ (three-dot menu)** and select **Download Diagnostics**
+4. Save the file and attach it to your GitHub bug report
+
+This file includes:
+- Lock metadata (firmware/hardware versions)
+- API response codes
+- Entity states
+- Configuration flags from `const.py`
+
+> 🔐 Sensitive information such as passwords and tokens are automatically redacted.
 
 ---
 
@@ -127,7 +149,7 @@ See the [ROADMAP.md](./ROADMAP.md) for upcoming features and ideas.
 ## 🧑‍💻 Contributing / Issues
 Got a feature request, bug report, or enhancement idea?
 
-- Found a bug or want a new feature? [Open an issue](https://github.com/kenster1965/sifely_cloud/issues)
+- 🐞 [Open an issue](https://github.com/kenster1965/sifely_cloud/issues)
 - Pull requests are welcome and encouraged!
 - Follow Home Assistant [developer documentation](https://developers.home-assistant.io/) when contributing code
 
@@ -144,5 +166,3 @@ Got a feature request, bug report, or enhancement idea?
 [MIT License](LICENSE)
 
 ---
-
-

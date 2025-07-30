@@ -22,6 +22,7 @@ def create_sensors(locks: list[dict], coordinator) -> list[SensorEntity]:
             entities.append(SifelyBatterySensor(lock, coordinator))
             entities.append(SifelyLockHistorySensor(lock, coordinator))
             entities.append(SifelyCloudErrorSensor(lock, coordinator))
+            entities.append(SifelyDiagnosticSensor(lock, coordinator))
         else:
             _LOGGER.warning("⚠️ Skipping sensor for lock with missing lockId: %s", lock)
     return entities
@@ -193,6 +194,46 @@ class SifelyCloudErrorSensor(CoordinatorEntity, SensorEntity):
             _LOGGER.warning("⚠️ Cannot clear error sensor — hass is None")
 
 
+class SifelyDiagnosticSensor(CoordinatorEntity, SensorEntity):
+    """Diagnostic sensor for Sifely lock metadata (firmware, hardware, etc.)."""
+
+    def __init__(self, lock_data: dict, coordinator):
+        super().__init__(coordinator)
+        self.coordinator = coordinator
+        self.lock_data = lock_data
+
+        self.alias = lock_data.get("lockAlias", f"{ENTITY_PREFIX} Lock")
+        self.lock_id = lock_data.get("lockId")
+
+        self._attr_name = f"{ENTITY_PREFIX}_{self.lock_id}_diagnostics" if self.lock_id else self.alias
+        self._attr_unique_id = f"{ENTITY_PREFIX.lower()}_{self.lock_id}_diagnostics" if self.lock_id else None
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_device_info = async_register_lock_device(lock_data)
+
+    @property
+    def native_value(self) -> str | None:
+        """Return a simple status for diagnostics."""
+        details = self.coordinator.details_data.get(self.lock_id)
+        return "OK" if details else "Unavailable"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return additional diagnostic attributes."""
+        details = self.coordinator.details_data.get(self.lock_id, {})
+        if not details:
+            return {}
+
+        return {
+            "firmware_revision": details.get("firmwareRevision", "N/A"),
+            "hardware_revision": details.get("hardwareRevision", "N/A"),
+            "keyboard_pwd_version": details.get("keyboardPwdVersion", "N/A"),
+            "has_gateway": details.get("hasGateway", False),
+            "is_frozen": details.get("isFrozen", False),
+            "passage_mode": details.get("passageMode", False),
+            "lock_version": details.get("lockVersion", "N/A"),
+        }
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -211,6 +252,7 @@ async def async_setup_entry(
     battery_count = sum(isinstance(e, SifelyBatterySensor) for e in all_entities)
     history_count = sum(isinstance(e, SifelyLockHistorySensor) for e in all_entities)
     error_count = sum(isinstance(e, SifelyCloudErrorSensor) for e in all_entities)
+    diagnostic_count = sum(isinstance(e, SifelyDiagnosticSensor) for e in all_entities)
 
     if all_entities:
         _LOGGER.info("✅ %d total sensors added.", len(all_entities))
@@ -220,5 +262,7 @@ async def async_setup_entry(
             _LOGGER.info("📜 %d history sensors added.", history_count)
         if error_count:
             _LOGGER.info("🚨 %d error sensors added.", error_count)
+        if diagnostic_count:
+            _LOGGER.info("🩺 %d diagnostic sensors added.", diagnostic_count)
     else:
         _LOGGER.warning("⚠️ No sensors found to set up.")
