@@ -6,7 +6,7 @@ import os
 NAME = "Sifely Cloud"
 DOMAIN = "sifely_cloud"
 ENTITY_PREFIX = "sifely" # Prefix for entity names
-VERSION = "1.0.3"
+VERSION = "1.1.0"
 ISSUE_URL = "https://github.com/kenster1965/sifely_cloud/issues"
 
 CONF_EMAIL = "User_Email"
