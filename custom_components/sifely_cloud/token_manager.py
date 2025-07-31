@@ -32,8 +32,8 @@ class SifelyTokenManager:
         self._load_stored_tokens()
 
         if self._is_token_valid():
-            _LOGGER.info("✅ Using cached token. Expires at: %s", self.token_expiry)
-            self._schedule_token_refresh()
+            _LOGGER.info("✅ Cached token found, but forcing refresh at startup.")
+            await self._perform_token_refresh()
         else:
             _LOGGER.info("🔐 No valid token found. Performing login...")
             await self._perform_login()
