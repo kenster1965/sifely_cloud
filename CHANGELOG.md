@@ -1,6 +1,10 @@
 # 📝 Changelog
 
 Notable changes to this project documented here.
+---
+## [1.1.1] - 2025-07-31
+### Bug Fix
+- During version updates the token did not re-fresh, Now performs force token re-fresh on HA reboots. 
 
 ---
 ## [1.1.0] - 2025-07-30
