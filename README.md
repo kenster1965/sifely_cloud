@@ -63,9 +63,11 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 
 ## 🔧 Installation
 ### Via HACS
+- Note: If you have not created your client ID yet, please visit [https://app-smart-manager.sifely.com/Login.html](https://sifely.com/Login.html), it will make the install smooth.
 [![hacs_badge](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kenster1965&repository=sifely_cloud&category=integration)
 
 ### Manual Installation
+- Note: If you have not created your client ID yet, please visit [https://app-smart-manager.sifely.com/Login.html](https://sifely.com/Login.html), it will make the install smooth.
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find configuration.yaml).
 2. If you do not have a custom_components directory (folder) there, you need to create it.
 3. In the custom_components directory (folder) create a new folder called `sifely_cloud`.

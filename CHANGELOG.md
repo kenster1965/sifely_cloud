@@ -2,6 +2,11 @@
 
 Notable changes to this project documented here.
 ---
+## [1.2.0] - 2025-09-18
+### Bug Fix
+- Ticket #23 / Fails to connect to server if the client id hasn't been previously generated.  Updated error message and help files.
+
+---
 ## [1.1.1] - 2025-07-31
 ### Bug Fix
 - During version updates the token did not re-fresh, Now performs force token re-fresh on HA reboots. 

@@ -19,7 +19,7 @@
       "bad_username": "Invalid username. Please check your email address.",
       "bad_password": "Incorrect password. Please try again.",
       "unknown_error": "Login failed due to an unknown error.",
-      "connection_error": "Could not connect to Sifely server. Please try again."
+      "connection_error": "Could not connect to Sifely server. Please try again.\n- Possible fix is to update your client_id at https://app-smart-manager.sifely.com/Login.html"
     },
     "abort": {
       "single_instance_allowed": "Only a single configuration of Sifely Cloud is allowed."
