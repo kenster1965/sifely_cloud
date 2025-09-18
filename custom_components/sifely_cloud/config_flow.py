@@ -63,6 +63,7 @@ class SifelyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             except Exception as e:
                 _LOGGER.exception("Error during login request: %s", e)
+                _LOGGER.info("Possible cause: Need to create a new client_id. See Sifely Cloud documentation.")
                 errors["base"] = "connection_error"
                 return await self._show_form(user_input, errors)
 
