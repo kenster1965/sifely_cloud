@@ -7,17 +7,17 @@ from .history_utils import fetch_and_update_lock_history
 
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 
 from .const import (
     DOMAIN, CONF_APX_NUM_LOCKS, LOCK_REQUEST_RETRIES, STATE_QUERY_INTERVAL, DETAILS_UPDATE_INTERVAL, \
-    HISTORY_DISPLAY_LIMIT, HISTORY_INTERVAL, TOKEN_401s_BEFORE_REAUTH, TOKEN_401s_BEFORE_ALERT, \
-    KEYLIST_ENDPOINT, LOCK_DETAIL_ENDPOINT, QUERY_STATE_ENDPOINT, LOCK_ENDPOINT, UNLOCK_ENDPOINT,
-    LOCK_HISTORY_ENDPOINT,
+    HISTORY_DISPLAY_LIMIT, HISTORY_INTERVAL, LOCK_LIST_ENDPOINT, LOCK_DETAIL_ENDPOINT, \
+    QUERY_STATE_ENDPOINT, LOCK_ENDPOINT, UNLOCK_ENDPOINT,LOCK_HISTORY_ENDPOINT, \
+    TOKEN_401s_BEFORE_REAUTH, TOKEN_401s_BEFORE_ALERT
 )
-from .token_manager import SifelyTokenManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,26 +29,22 @@ class SifelyCoordinator(DataUpdateCoordinator):
     def __init__(
         self,
         hass: HomeAssistant,
-        token_manager: SifelyTokenManager,
+        api_key: str,
         config_entry,
     ):
         self.hass = hass
-        self.token_manager = token_manager
         self.config_entry = config_entry
-        self.session = token_manager.session
-        self.access_token = token_manager.access_token
+        self.session = async_get_clientsession(hass)
         self.apx_locks = config_entry.options.get(CONF_APX_NUM_LOCKS, 5)
-
-        if not self.access_token:
-            raise UpdateFailed("❌ Could not retrieve valid login token.")
 
         self.last_details_update = datetime.min.replace(tzinfo=timezone.utc)
         self.lock_list = []
         self.details_data = {}
         self.open_state_data = {}
         self._consecutive_401s = 0
-
-
+        self.headers = {
+            "Authorization": api_key,
+        }
 
         super().__init__(
             hass,
@@ -63,18 +59,14 @@ class SifelyCoordinator(DataUpdateCoordinator):
 
     async def async_fetch_lock_list(self):
         """Get lock data from the Sifely API."""
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
         params = {
             "pageNo": 1,
             "pageSize": self.apx_locks,
         }
 
         try:
-            _LOGGER.debug("📡 Fetching lock list from: %s", KEYLIST_ENDPOINT)
-            async with self.session.post(KEYLIST_ENDPOINT, headers=headers, params=params) as resp:
+            _LOGGER.debug("📡 Fetching lock list from: %s", LOCK_LIST_ENDPOINT)
+            async with self.session.post(LOCK_LIST_ENDPOINT, headers=self.headers, params=params) as resp:
                 text = await resp.text()
                 _LOGGER.debug("🔑 Lock list raw response: %s", text)
 
@@ -104,20 +96,16 @@ class SifelyCoordinator(DataUpdateCoordinator):
         if not hasattr(self, "_consecutive_401s"):
             self._consecutive_401s = 0
 
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-
         for lock in self.lock_list:
             lock_id = lock.get("lockId")
             if not lock_id:
                 _LOGGER.warning("🔑 Skipping lock with missing lockId: %s", lock)
                 continue
 
-            url = f"{QUERY_STATE_ENDPOINT}?lockId={lock_id}"
+            params = { "lockId": lock_id }
+            
             try:
-                async with self.session.get(url, headers=headers) as resp:
+                async with self.session.get(QUERY_STATE_ENDPOINT, headers=self.headers, params=params) as resp:
                     text = await resp.text()
                     _LOGGER.debug("🔒 Open state response for %s: %s", lock_id, text)
 
@@ -129,15 +117,7 @@ class SifelyCoordinator(DataUpdateCoordinator):
                             if hasattr(self, "clear_cloud_error"):
                                 self.clear_cloud_error()
 
-                            if "code" in data:
-                                if data.get("code") == 200:
-                                    self.open_state_data[lock_id] = data.get("data", {}).get("state")
-                                elif data.get("code") == -3003:
-                                    _LOGGER.debug("⏳ Gateway busy when querying state for %s. Will retry.", lock_id)
-                                else:
-                                    _LOGGER.warning("⚠️ Unexpected open state for %s: %s", lock_id, data)
-
-                            elif "state" in data:
+                            if "state" in data:
                                 self.open_state_data[lock_id] = data.get("state")
                             else:
                                 _LOGGER.warning("⚠️ Unknown open state format for %s: %s", lock_id, data)
@@ -147,9 +127,8 @@ class SifelyCoordinator(DataUpdateCoordinator):
                             _LOGGER.warning("⚠️ Received 401 (#%d) when fetching state for %s", self._consecutive_401s, lock_id)
 
                             if self._consecutive_401s == TOKEN_401s_BEFORE_REAUTH:
-                                _LOGGER.warning(f"🔁 Detected {TOKEN_401s_BEFORE_REAUTH} consecutive 401s. Triggering token refresh...")
-                                await self.token_manager.refresh_login_token()
-
+                                _LOGGER.warning(f"🔁 Detected {TOKEN_401s_BEFORE_REAUTH} consecutive 401s.")
+                        
                             if self._consecutive_401s >= TOKEN_401s_BEFORE_ALERT:
                                 if hasattr(self, "set_cloud_error"):
                                     self.set_cloud_error(f"Exceeded {TOKEN_401s_BEFORE_ALERT} consecutive 401 errors. Token likely invalid.")
@@ -172,20 +151,15 @@ class SifelyCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("⏩ Skipping lock detail polling: lock list not available")
             return self.details_data
 
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-
         for lock in self.lock_list:
             lock_id = lock.get("lockId")
             if not lock_id:
                 _LOGGER.warning("🔑 Skipping lock with missing lockId: %s", lock)
                 continue
 
-            url = f"{LOCK_DETAIL_ENDPOINT}?lockId={lock_id}"
+            params = { "lockId": lock_id }
             try:
-                async with self.session.get(url, headers=headers) as resp:
+                async with self.session.get(LOCK_DETAIL_ENDPOINT, headers=self.headers, params=params) as resp:
                     text = await resp.text()
                     _LOGGER.debug("🔍 Lock detail response for %s: %s", lock_id, text)
 
@@ -193,20 +167,9 @@ class SifelyCoordinator(DataUpdateCoordinator):
                         data = json.loads(text)
 
                         if resp.status == 200:
-                            if data.get("code") == 200 and isinstance(data.get("data"), dict):
-                                # ✅ Standard format
-                                lock_data = data["data"]
-                                self.details_data[lock_id] = lock_data
-                                _LOGGER.debug("✅ Parsed wrapped lock detail for %s", lock_id)
-
-                            elif data.get("code") == -3003:
-                                _LOGGER.debug("⏳ Gateway busy when querying details for %s. Will retry.", lock_id)
-
-                            elif "lockId" in data:
-                                # ✅ Some devices return raw lock data directly
+                            if "lockId" in data:
                                 self.details_data[lock_id] = data
-                                _LOGGER.debug("ℹ️ Parsed unwrapped lock detail for %s", lock_id)
-
+                                _LOGGER.debug("ℹ️ Parsed lock detail for %s", lock_id)
                             else:
                                 _LOGGER.warning("⚠️ Unexpected lock detail format for %s: %s", lock_id, data)
 
@@ -225,15 +188,11 @@ class SifelyCoordinator(DataUpdateCoordinator):
     async def async_send_lock_command(self, lock_id: int, lock: bool) -> bool:
         """Send a lock or unlock command to a specific lock."""
         endpoint = LOCK_ENDPOINT if lock else UNLOCK_ENDPOINT
-        url = f"{endpoint}?lockId={lock_id}"
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-
+        params = { "lockId": lock_id }
+  
         for attempt in range(1, LOCK_REQUEST_RETRIES + 1):
             try:
-                async with self.session.post(url, headers=headers) as resp:
+                async with self.session.post(endpoint, headers=self.headers, params=params) as resp:
                     text = await resp.text()
                     _LOGGER.debug("🔐 Lock command response (attempt %d) for %s: %s", attempt, lock_id, text)
 
@@ -254,15 +213,9 @@ class SifelyCoordinator(DataUpdateCoordinator):
 
     async def async_query_lock_history(self, lock_id: int) -> list:
         """Fetch lock history records for a given lock."""
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-
-        url = f"{LOCK_HISTORY_ENDPOINT}?lockId={lock_id}&pageNo=1&pageSize={HISTORY_DISPLAY_LIMIT}"
-
+        params = { "lockId": lock_id, "pageNo": 1, "pageSize": HISTORY_DISPLAY_LIMIT }
         try:
-            async with self.session.get(url, headers=headers) as resp:
+            async with self.session.get(LOCK_HISTORY_ENDPOINT, headers=self.headers, params=params) as resp:
                 text = await resp.text()
                 _LOGGER.debug("📜 Lock history response for %s: %s", lock_id, text)
 
@@ -303,11 +256,11 @@ class SifelyCoordinator(DataUpdateCoordinator):
 
 async def setup_sifely_coordinator(
     hass: HomeAssistant,
-    token_manager: SifelyTokenManager,
+    api_key,
     config_entry,
 ) -> SifelyCoordinator:
     """Initialize, refresh, and store the coordinator."""
-    coordinator = SifelyCoordinator(hass, token_manager, config_entry)
+    coordinator = SifelyCoordinator(hass, api_key, config_entry)
 
     # 📡 Step 1: Fetch initial lock list
     locks = await coordinator.async_fetch_lock_list()
