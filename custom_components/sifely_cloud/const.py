@@ -1,7 +1,5 @@
 """Sifely Cloud - Constants."""
 
-import os
-
 # Base component constants
 NAME = "Sifely Cloud"
 DOMAIN = "sifely_cloud"
@@ -9,9 +7,9 @@ ENTITY_PREFIX = "sifely" # Prefix for entity names
 VERSION = "1.2.0"
 ISSUE_URL = "https://github.com/kenster1965/sifely_cloud/issues"
 
-CONF_EMAIL = "User_Email"
+CONF_ACCOUNT = "User_Email"
 CONF_PASSWORD = "User_Password"
-CONF_CLIENT_ID = "clientId"
+CONF_API_KEY = "API_Key"
 CONF_APX_NUM_LOCKS = "apxNumLocks" # Approximate number of locks
 CONF_HISTORY_ENTRIES = "history_entries"  # Number of history records to keep
 
@@ -23,17 +21,14 @@ HISTORY_INTERVAL = 3600          # e.g., 1 hour for Lock history
 
 HISTORY_DISPLAY_LIMIT = 20  # Limit for history fetching, max possible history records in for HISTORY_INTERVAL time
 LOCK_REQUEST_RETRIES = 3  # Number of retries for lock/unlock requests
-TOKEN_REFRESH_BUFFER_MINUTES = 5 # Buffer time to refresh token early (before actual expiration)
 TOKEN_401s_BEFORE_REAUTH = 5  # Number of 401 errors before re-authentication
 TOKEN_401s_BEFORE_ALERT = 10  # Number of 401 errors before alerting user
 
 
 # API endpoints
-API_BASE_URL = "https://app-smart-server.sifely.com"
-LOGIN_ENDPOINT = f"{API_BASE_URL}/system/smart/loginByGuest"
-TOKEN_ENDPOINT = f"{API_BASE_URL}/system/smart/login"
-REFRESH_ENDPOINT = f"{API_BASE_URL}/system/smart/oauthToken"
-KEYLIST_ENDPOINT = f"{API_BASE_URL}/v3/key/list"
+API_BASE_URL = "https://cus-openapi.sifely.com"
+LOGIN_ENDPOINT = f"{API_BASE_URL}/system/smart/login"
+LOCK_LIST_ENDPOINT = f"{API_BASE_URL}/v3/lock/list"
 LOCK_DETAIL_ENDPOINT = f"{API_BASE_URL}/v3/lock/detail"
 QUERY_STATE_ENDPOINT = f"{API_BASE_URL}/v3/lock/queryOpenState"
 UNLOCK_ENDPOINT = f"{API_BASE_URL}/v3/lock/unlock"
